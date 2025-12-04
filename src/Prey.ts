@@ -274,7 +274,18 @@ export class Prey {
   }
 
   private updateEnergy(): void {
-    if (this.energy > 0) {
+    // Regenerate energy when needs are satisfied
+    const hungerSatisfied = this.hunger <= this.satisfiedThreshold;
+    const thirstSatisfied = this.thirst <= this.satisfiedThreshold;
+
+    if (hungerSatisfied && thirstSatisfied) {
+      // Both needs satisfied - regenerate energy faster
+      this.energy = Math.min(this.maxEnergy, this.energy + 0.5);
+    } else if (hungerSatisfied || thirstSatisfied) {
+      // One need satisfied - regenerate energy slowly
+      this.energy = Math.min(this.maxEnergy, this.energy + 0.2);
+    } else {
+      // Needs not satisfied - consume energy
       this.energy = Math.max(0, this.energy - this.energyConsumptionRate);
     }
   }
