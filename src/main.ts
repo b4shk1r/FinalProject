@@ -4,6 +4,7 @@ import { CameraController } from './CameraController';
 import { EntityManager } from './EntityManager';
 import { TimeManager } from './TimeManager';
 import { InfoPanel } from './InfoPanel';
+import { FoodManager } from './FoodManager';
 
 class Game {
   private app: PIXI.Application;
@@ -13,6 +14,7 @@ class Game {
   private entityManager: EntityManager;
   private timeManager: TimeManager;
   private infoPanel: InfoPanel;
+  private foodManager: FoodManager;
 
   constructor() {
     this.app = new PIXI.Application({
@@ -31,8 +33,13 @@ class Game {
     this.gameMap = new GameMap();
     this.viewport.addChild(this.gameMap.getContainer());
 
+    this.foodManager = new FoodManager(this.gameMap.getWorldBounds());
+    this.viewport.addChild(this.foodManager.getContainer());
+    this.foodManager.spawnFoodClusters(10, 8);
+
     this.entityManager = new EntityManager(this.gameMap.getWorldBounds());
     this.viewport.addChild(this.entityManager.getContainer());
+    this.entityManager.setFoodManager(this.foodManager);
 
     this.infoPanel = new InfoPanel();
     this.entityManager.setSelectionChangeCallback((prey) => {
@@ -78,11 +85,13 @@ class Game {
     const timeScale = this.timeManager.getTimeScale();
 
     for (let i = 0; i < timeScale; i++) {
+      this.foodManager.update();
       this.entityManager.update();
     }
 
     if (timeScale > 0 && timeScale < 1) {
       if (Math.random() < timeScale) {
+        this.foodManager.update();
         this.entityManager.update();
       }
     }

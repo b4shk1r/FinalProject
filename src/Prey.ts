@@ -121,18 +121,52 @@ export class Prey {
     this.graphics.lineStyle(0);
   }
 
-  public update(): void {
+  public update(nearestFood?: Food | null): void {
     if (this.isDead) return;
 
     this.updateHunger();
     this.updateThirst();
     this.updateEnergy();
     this.updateHealth();
-    this.updateWanderBehavior();
+    this.updateBehavior(nearestFood);
     this.move();
     this.stayInBounds();
     this.updateGraphicsPosition();
     this.draw();
+  }
+
+  private updateBehavior(nearestFood?: Food | null): void {
+    if (this.energy <= 0) {
+      this.velocity.x = 0;
+      this.velocity.y = 0;
+      return;
+    }
+
+    if (this.hunger >= this.hungerThreshold && nearestFood && nearestFood.getCapacity() > 0) {
+      this.seekFood(nearestFood);
+    } else {
+      this.targetFood = null;
+      this.updateWanderBehavior();
+    }
+  }
+
+  private seekFood(food: Food): void {
+    this.targetFood = food;
+    const foodPos = food.getPosition();
+    const dx = foodPos.x - this.position.x;
+    const dy = foodPos.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < this.size + 5) {
+      const consumed = food.consume(this.eatingRate);
+      this.hunger = Math.max(0, this.hunger - consumed);
+      this.velocity.x = 0;
+      this.velocity.y = 0;
+    } else {
+      const angle = Math.atan2(dy, dx);
+      this.velocity.x = Math.cos(angle) * this.speed;
+      this.velocity.y = Math.sin(angle) * this.speed;
+    }
   }
 
   private updateEnergy(): void {
