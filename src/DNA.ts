@@ -3,6 +3,7 @@ export interface Chromosome {
   speed: number;
   health: number;
   attractiveness: number;
+  vision: number;
   gender: 'male' | 'female';
 }
 
@@ -23,6 +24,7 @@ export class DNA {
       speed: this.randomValue(0.5, 1.5),
       health: this.randomValue(0.5, 1.5),
       attractiveness: this.randomValue(0.3, 1.0),
+      vision: this.randomValue(0.5, 1.5),
       gender: Math.random() < 0.5 ? 'male' : 'female'
     };
   }
@@ -67,6 +69,12 @@ export class DNA {
     return this.getDominantChromosome().gender;
   }
 
+  public getVisionMultiplier(): number {
+    const dominant = this.getDominantChromosome();
+    const recessive = this.getRecessiveChromosome();
+    return (dominant.vision * 0.75) + (recessive.vision * 0.25);
+  }
+
   public mutate(mutationRate: number = 0.1): DNA {
     const newChromosome1 = this.mutateChromosome(this.chromosome1, mutationRate);
     const newChromosome2 = this.mutateChromosome(this.chromosome2, mutationRate);
@@ -95,6 +103,10 @@ export class DNA {
 
     if (Math.random() < mutationRate) {
       mutated.attractiveness = this.clamp(mutated.attractiveness + (Math.random() - 0.5) * 0.15, 0.3, 1.0);
+    }
+
+    if (Math.random() < mutationRate) {
+      mutated.vision = this.clamp(mutated.vision + (Math.random() - 0.5) * 0.2, 0.5, 1.5);
     }
 
     if (Math.random() < mutationRate * 0.1) {

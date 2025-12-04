@@ -36,6 +36,8 @@ export class Prey {
   private targetFood: Food | null = null;
   private readonly hungerThreshold: number = 30;
   private readonly eatingRate: number = 5;
+  private readonly baseVisionRange: number = 80;
+  private visionRange: number;
 
   constructor(x: number, y: number, worldBounds: { width: number; height: number }, dna?: DNA) {
     this.position = { x, y };
@@ -49,6 +51,7 @@ export class Prey {
     this.health = this.maxHealth;
     this.speed = this.baseSpeed * this.dna.getSpeedMultiplier();
     this.size = this.baseSize * this.dna.getSizeMultiplier();
+    this.visionRange = this.baseVisionRange * this.dna.getVisionMultiplier();
 
     const sizeMultiplier = this.dna.getSizeMultiplier();
     const speedMultiplier = this.dna.getSpeedMultiplier();
@@ -142,12 +145,20 @@ export class Prey {
       return;
     }
 
-    if (this.hunger >= this.hungerThreshold && nearestFood && nearestFood.getCapacity() > 0) {
-      this.seekFood(nearestFood);
-    } else {
-      this.targetFood = null;
-      this.updateWanderBehavior();
+    if (this.hunger > 0 && nearestFood && nearestFood.getCapacity() > 0) {
+      const foodPos = nearestFood.getPosition();
+      const dx = foodPos.x - this.position.x;
+      const dy = foodPos.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= this.visionRange) {
+        this.seekFood(nearestFood);
+        return;
+      }
     }
+
+    this.targetFood = null;
+    this.updateWanderBehavior();
   }
 
   private seekFood(food: Food): void {
@@ -158,7 +169,8 @@ export class Prey {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance < this.size + 5) {
-      const consumed = food.consume(this.eatingRate);
+      const amountNeeded = this.hunger;
+      const consumed = food.consume(Math.min(this.eatingRate, amountNeeded));
       this.hunger = Math.max(0, this.hunger - consumed);
       this.velocity.x = 0;
       this.velocity.y = 0;
@@ -304,6 +316,10 @@ export class Prey {
 
   public getAttractiveness(): number {
     return this.dna.getAttractiveness();
+  }
+
+  public getVisionRange(): number {
+    return this.visionRange;
   }
 
   public setSelected(selected: boolean): void {

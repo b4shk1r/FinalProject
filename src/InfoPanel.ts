@@ -75,6 +75,7 @@ export class InfoPanel {
           <div><span style="color: #aaa;">Gender:</span> <span style="color: ${prey.getGender() === 'male' ? '#4080ff' : '#ff69b4'};">${prey.getGender() === 'male' ? '♂ Male' : '♀ Female'}</span></div>
           <div><span style="color: #aaa;">Size:</span> ${this.formatValue(prey.getSize())}</div>
           <div><span style="color: #aaa;">Speed:</span> ${this.formatValue(prey.getSpeed())}</div>
+          <div><span style="color: #aaa;">Vision Range:</span> ${this.formatValue(prey.getVisionRange())}</div>
         </div>
       </div>
 
@@ -95,6 +96,7 @@ export class InfoPanel {
           <div style="margin-top: 4px;"><span style="color: #aaa;">Size Multiplier:</span> ${this.formatValue(dna.getSizeMultiplier())}</div>
           <div><span style="color: #aaa;">Speed Multiplier:</span> ${this.formatValue(dna.getSpeedMultiplier())}</div>
           <div><span style="color: #aaa;">Health Multiplier:</span> ${this.formatValue(dna.getHealthMultiplier())}</div>
+          <div><span style="color: #aaa;">Vision Multiplier:</span> ${this.formatValue(dna.getVisionMultiplier())}</div>
         </div>
       </div>
 
@@ -113,6 +115,7 @@ export class InfoPanel {
       { key: 'speed', label: 'Speed', color: '#66ccff' },
       { key: 'health', label: 'Health', color: '#ff6666' },
       { key: 'attractiveness', label: 'Attract', color: '#ff66ff' },
+      { key: 'vision', label: 'Vision', color: '#66ff66' },
       { key: 'gender', label: 'Gender', color: '#ffff66' }
     ];
 
