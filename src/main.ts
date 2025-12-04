@@ -86,6 +86,8 @@ class Game {
         this.entityManager.update();
       }
     }
+
+    this.infoPanel.refresh();
   }
 }
 
