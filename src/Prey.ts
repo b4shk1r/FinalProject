@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { DNA } from './DNA';
+import { Food } from './Food';
 
 export class Prey {
   private graphics: PIXI.Graphics;
-  private healthBar: PIXI.Graphics;
   private selectionCircle: PIXI.Graphics;
   private position: { x: number; y: number };
   private velocity: { x: number; y: number };
@@ -33,6 +33,10 @@ export class Prey {
   private isDead: boolean = false;
   private isSelected: boolean = false;
 
+  private targetFood: Food | null = null;
+  private readonly hungerThreshold: number = 30;
+  private readonly eatingRate: number = 5;
+
   constructor(x: number, y: number, worldBounds: { width: number; height: number }, dna?: DNA) {
     this.position = { x, y };
     this.velocity = { x: 0, y: 0 };
@@ -53,10 +57,8 @@ export class Prey {
     this.graphics = new PIXI.Graphics();
     this.graphics.interactive = true;
     this.graphics.cursor = 'pointer';
-    this.healthBar = new PIXI.Graphics();
     this.selectionCircle = new PIXI.Graphics();
     this.graphics.addChild(this.selectionCircle);
-    this.graphics.addChild(this.healthBar);
     this.draw();
     this.updateGraphicsPosition();
   }
@@ -81,7 +83,6 @@ export class Prey {
     }
 
     this.drawSelectionCircle();
-    this.drawHealthBar();
   }
 
   private drawSelectionCircle(): void {
@@ -118,52 +119,6 @@ export class Prey {
     }
 
     this.graphics.lineStyle(0);
-  }
-
-  private drawHealthBar(): void {
-    this.healthBar.clear();
-
-    if (this.isDead) return;
-
-    const barWidth = this.size * 2;
-    const barHeight = 2.5;
-    const barSpacing = 1;
-    const startY = -this.size - 6;
-
-    const healthPercent = this.health / this.maxHealth;
-    this.healthBar.beginFill(0x000000, 0.5);
-    this.healthBar.drawRect(-barWidth / 2, startY, barWidth, barHeight);
-    this.healthBar.endFill();
-    this.healthBar.beginFill(0xff0000);
-    this.healthBar.drawRect(-barWidth / 2, startY, barWidth * healthPercent, barHeight);
-    this.healthBar.endFill();
-
-    const thirstPercent = this.thirst / this.maxThirst;
-    const thirstBarY = startY + barHeight + barSpacing;
-    this.healthBar.beginFill(0x000000, 0.5);
-    this.healthBar.drawRect(-barWidth / 2, thirstBarY, barWidth, barHeight);
-    this.healthBar.endFill();
-    this.healthBar.beginFill(0x0088ff);
-    this.healthBar.drawRect(-barWidth / 2, thirstBarY, barWidth * thirstPercent, barHeight);
-    this.healthBar.endFill();
-
-    const hungerPercent = this.hunger / this.maxHunger;
-    const hungerBarY = thirstBarY + barHeight + barSpacing;
-    this.healthBar.beginFill(0x000000, 0.5);
-    this.healthBar.drawRect(-barWidth / 2, hungerBarY, barWidth, barHeight);
-    this.healthBar.endFill();
-    this.healthBar.beginFill(0x00ff00);
-    this.healthBar.drawRect(-barWidth / 2, hungerBarY, barWidth * hungerPercent, barHeight);
-    this.healthBar.endFill();
-
-    const energyPercent = this.energy / this.maxEnergy;
-    const energyBarY = hungerBarY + barHeight + barSpacing;
-    this.healthBar.beginFill(0x000000, 0.5);
-    this.healthBar.drawRect(-barWidth / 2, energyBarY, barWidth, barHeight);
-    this.healthBar.endFill();
-    this.healthBar.beginFill(0xffff00);
-    this.healthBar.drawRect(-barWidth / 2, energyBarY, barWidth * energyPercent, barHeight);
-    this.healthBar.endFill();
   }
 
   public update(): void {
