@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Prey } from './Prey';
 import { FoodManager } from './FoodManager';
+import { WaterManager } from './WaterManager';
 
 export class EntityManager {
   private container: PIXI.Container;
@@ -9,6 +10,7 @@ export class EntityManager {
   private selectedPrey: Prey | null = null;
   private onSelectionChange?: (prey: Prey | null) => void;
   private foodManager: FoodManager | null = null;
+  private waterManager: WaterManager | null = null;
 
   constructor(worldBounds: { width: number; height: number }) {
     this.container = new PIXI.Container();
@@ -17,6 +19,10 @@ export class EntityManager {
 
   public setFoodManager(foodManager: FoodManager): void {
     this.foodManager = foodManager;
+  }
+
+  public setWaterManager(waterManager: WaterManager): void {
+    this.waterManager = waterManager;
   }
 
   public setSelectionChangeCallback(callback: (prey: Prey | null) => void): void {
@@ -57,10 +63,17 @@ export class EntityManager {
   public update(): void {
     for (const prey of this.preyList) {
       let nearestFood = null;
+      let nearestWater = null;
+
       if (this.foodManager) {
         nearestFood = this.foodManager.findNearestFood(prey.getPosition());
       }
-      prey.update(nearestFood);
+
+      if (this.waterManager) {
+        nearestWater = this.waterManager.findNearestWater(prey.getPosition());
+      }
+
+      prey.update(nearestFood, nearestWater);
     }
 
     this.removeDeadPrey();

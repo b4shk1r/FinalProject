@@ -5,6 +5,7 @@ import { EntityManager } from './EntityManager';
 import { TimeManager } from './TimeManager';
 import { InfoPanel } from './InfoPanel';
 import { FoodManager } from './FoodManager';
+import { WaterManager } from './WaterManager';
 
 class Game {
   private app: PIXI.Application;
@@ -15,6 +16,7 @@ class Game {
   private timeManager: TimeManager;
   private infoPanel: InfoPanel;
   private foodManager: FoodManager;
+  private waterManager: WaterManager;
 
   constructor() {
     this.app = new PIXI.Application({
@@ -33,6 +35,10 @@ class Game {
     this.gameMap = new GameMap();
     this.viewport.addChild(this.gameMap.getContainer());
 
+    this.waterManager = new WaterManager(this.gameMap.getWorldBounds());
+    this.viewport.addChild(this.waterManager.getContainer());
+    this.waterManager.spawnWaterBodies(5);
+
     this.foodManager = new FoodManager(this.gameMap.getWorldBounds());
     this.viewport.addChild(this.foodManager.getContainer());
     this.foodManager.spawnFoodClusters(10, 8);
@@ -40,6 +46,7 @@ class Game {
     this.entityManager = new EntityManager(this.gameMap.getWorldBounds());
     this.viewport.addChild(this.entityManager.getContainer());
     this.entityManager.setFoodManager(this.foodManager);
+    this.entityManager.setWaterManager(this.waterManager);
 
     this.infoPanel = new InfoPanel();
     this.entityManager.setSelectionChangeCallback((prey) => {

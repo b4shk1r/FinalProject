@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { DNA } from './DNA';
 import { Food } from './Food';
+import { Water } from './Water';
 
 export class Prey {
   private graphics: PIXI.Graphics;
@@ -21,12 +22,13 @@ export class Prey {
   private maxHealth: number;
   private hunger: number = 0;
   private readonly maxHunger: number = 100;
-  private readonly hungerRate: number = 0.05;
+  private readonly hungerRate: number = 0.03;
   private readonly starvationDamage: number = 0.1;
   private thirst: number = 0;
   private readonly maxThirst: number = 100;
-  private readonly thirstRate: number = 0.07;
+  private readonly thirstRate: number = 0.04;
   private readonly dehydrationDamage: number = 0.15;
+  private readonly drinkingRate: number = 15;
   private energy: number = 100;
   private readonly maxEnergy: number = 100;
   private energyConsumptionRate: number;
@@ -34,10 +36,13 @@ export class Prey {
   private isSelected: boolean = false;
 
   private targetFood: Food | null = null;
-  private readonly hungerThreshold: number = 30;
-  private readonly eatingRate: number = 5;
+  private targetWater: Water | null = null;
+  private readonly eatingRate: number = 10;
   private readonly baseVisionRange: number = 80;
   private visionRange: number;
+
+  private readonly criticalThreshold: number = 70;
+  private readonly satisfiedThreshold: number = 20;
 
   constructor(x: number, y: number, worldBounds: { width: number; height: number }, dna?: DNA) {
     this.position = { x, y };
@@ -124,41 +129,128 @@ export class Prey {
     this.graphics.lineStyle(0);
   }
 
-  public update(nearestFood?: Food | null): void {
+  public update(nearestFood?: Food | null, nearestWater?: Water | null): void {
     if (this.isDead) return;
 
     this.updateHunger();
     this.updateThirst();
     this.updateEnergy();
     this.updateHealth();
-    this.updateBehavior(nearestFood);
+    this.updateBehavior(nearestFood, nearestWater);
     this.move();
     this.stayInBounds();
     this.updateGraphicsPosition();
     this.draw();
   }
 
-  private updateBehavior(nearestFood?: Food | null): void {
+  private updateBehavior(nearestFood?: Food | null, nearestWater?: Water | null): void {
     if (this.energy <= 0) {
       this.velocity.x = 0;
       this.velocity.y = 0;
       return;
     }
 
-    if (this.hunger > 0 && nearestFood && nearestFood.getCapacity() > 0) {
-      const foodPos = nearestFood.getPosition();
-      const dx = foodPos.x - this.position.x;
-      const dy = foodPos.y - this.position.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    // Determine if needs are critical or satisfied
+    const hungerCritical = this.hunger >= this.criticalThreshold;
+    const thirstCritical = this.thirst >= this.criticalThreshold;
+    const hungerSatisfied = this.hunger <= this.satisfiedThreshold;
+    const thirstSatisfied = this.thirst <= this.satisfiedThreshold;
 
-      if (distance <= this.visionRange) {
-        this.seekFood(nearestFood);
-        return;
+    // CRITICAL PRIORITY: If either need is critical, prioritize the most critical one
+    if (hungerCritical || thirstCritical) {
+      // Choose the more critical need
+      if (hungerCritical && thirstCritical) {
+        // Both critical - choose the worse one
+        if (this.hunger >= this.thirst) {
+          if (this.trySeekFood(nearestFood)) return;
+          if (this.trySeekWater(nearestWater)) return;
+        } else {
+          if (this.trySeekWater(nearestWater)) return;
+          if (this.trySeekFood(nearestFood)) return;
+        }
+      } else if (hungerCritical) {
+        if (this.trySeekFood(nearestFood)) return;
+        // If can't find food, at least try water
+        if (this.trySeekWater(nearestWater)) return;
+      } else if (thirstCritical) {
+        if (this.trySeekWater(nearestWater)) return;
+        // If can't find water, at least try food
+        if (this.trySeekFood(nearestFood)) return;
       }
     }
+    // NORMAL PRIORITY: Balance both needs
+    else if (!hungerSatisfied && !thirstSatisfied) {
+      // Both needs present - alternate based on which is higher
+      if (this.hunger > this.thirst) {
+        if (this.trySeekFood(nearestFood)) return;
+        if (this.trySeekWater(nearestWater)) return;
+      } else {
+        if (this.trySeekWater(nearestWater)) return;
+        if (this.trySeekFood(nearestFood)) return;
+      }
+    }
+    // SINGLE NEED: Only one need active
+    else if (!hungerSatisfied) {
+      if (this.trySeekFood(nearestFood)) return;
+    } else if (!thirstSatisfied) {
+      if (this.trySeekWater(nearestWater)) return;
+    }
 
+    // Nothing to do - wander
     this.targetFood = null;
+    this.targetWater = null;
     this.updateWanderBehavior();
+  }
+
+  private trySeekFood(nearestFood?: Food | null): boolean {
+    if (!nearestFood || nearestFood.getCapacity() <= 0) return false;
+
+    const foodPos = nearestFood.getPosition();
+    const dx = foodPos.x - this.position.x;
+    const dy = foodPos.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= this.visionRange) {
+      this.seekFood(nearestFood);
+      return true;
+    }
+    return false;
+  }
+
+  private trySeekWater(nearestWater?: Water | null): boolean {
+    if (!nearestWater) return false;
+
+    const waterPos = nearestWater.getPosition();
+    const dx = waterPos.x - this.position.x;
+    const dy = waterPos.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= this.visionRange) {
+      this.seekWater(nearestWater);
+      return true;
+    }
+    return false;
+  }
+
+  private seekWater(water: Water): void {
+    this.targetWater = water;
+    const waterPos = water.getPosition();
+    const dx = waterPos.x - this.position.x;
+    const dy = waterPos.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Check if already at water
+    if (water.isPointInside(this.position.x, this.position.y)) {
+      const amountNeeded = this.thirst;
+      const drunk = Math.min(this.drinkingRate, amountNeeded);
+      this.thirst = Math.max(0, this.thirst - drunk);
+      this.velocity.x = 0;
+      this.velocity.y = 0;
+    } else {
+      const angle = Math.atan2(dy, dx);
+      this.velocity.x = Math.cos(angle) * this.speed;
+      this.velocity.y = Math.sin(angle) * this.speed;
+    }
   }
 
   private seekFood(food: Food): void {
